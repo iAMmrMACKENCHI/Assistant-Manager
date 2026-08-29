@@ -33,7 +33,9 @@ IN PROGRESS · Started 09:14
 ```
 
 ## Update
-Simple form, not a general-purpose builder. Base fields: Hours Spent, Notes. Role-specific fields come from `workflow_steps.field_schema` for that stage — e.g. NDS Design / Layout / TCP show Splice Count + Footage; SSP QC shows GLM + WFMT. **Only render fields relevant to that employee's current stage** — never show every possible field to everyone.
+Simple form, not a general-purpose builder. Base fields: Hours Spent, Notes. Role-specific fields come from the current `work_type_stages` and `work_type_fields` definitions for that stage — e.g. NDS Design / Layout / TCP show Splice Count + Footage; SSP QC shows GLM + WFMT. **Only render fields relevant to that employee's current stage** — never show every possible field to everyone.
+
+On Submit, the server-side `submit_work_item` RPC checks that every key in `work_type_stages.required_field_keys` has a non-null value in `jobs.field_values`; client-side validation is only a convenience.
 
 Include an **Urgent** toggle on the update form — off by default. When on, the update is flagged for the manager dashboard immediately (transition #10 in `03-workflow-engine.md`) and the employee should see a short confirmation that it's been flagged, not just a generic "saved."
 

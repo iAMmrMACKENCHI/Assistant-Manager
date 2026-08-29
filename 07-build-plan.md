@@ -22,8 +22,8 @@ Write RLS policies per `02-roles-permissions.md` for every table. Employees: sel
 **Done when:** an employee querying `work_items` only ever gets rows where they're the assignee; a manager gets the org's full set.
 
 ## Step 5 — Workflow engine (RPC functions)
-Implement each transition in `03-workflow-engine.md` as a Postgres RPC function (`assign_work_item`, `start_work_item`, `stop_work_item`, `submit_work_item`, `approve_work_item`, `reject_work_item`, `resume_work_item`, `reassign_work_item`, `return_to_stage`, `raise_urgent_flag`, `clear_urgent_flag`, `close_job`). Each function re-checks role, validates the from-status, mutates `work_items`, and writes an `events` row — atomically.
-**Done when:** calling any function outside its allowed status/role fails cleanly; calling it correctly leaves both `work_items` and `events` updated in one transaction.
+Implement each transition in `03-workflow-engine.md` as a Postgres RPC function (`assign_work_item`, `start_work_item`, `stop_work_item`, `submit_work_item`, `approve_work_item`, `reject_work_item`, `resume_work_item`, `reassign_work_item`, `return_to_stage`, `raise_urgent_flag`, `clear_urgent_flag`, `close_job`). Each function re-checks role, validates the from-status, mutates `work_items`, and writes an `events` row — atomically. The `submit_work_item` RPC must also enforce the current stage's `required_field_keys` against `jobs.field_values` server-side.
+**Done when:** calling any function outside its allowed status/role, or submitting with a missing required field, fails cleanly; calling it correctly leaves both `work_items` and `events` updated in one transaction.
 
 ## Step 5b — Onboarding flow
 Build the three-step onboarding in `08-onboarding-flow.md`: org creation, people (manual + Excel), and the "tell TaskGrid how you work" Work Type/Fields/Stages builder, including the system-template cloning (`system_templates` → org's own `work_types`).
@@ -34,7 +34,7 @@ Build `/dashboard`. Port the structure of `taskgrid-manager-board.jsx` (provided
 **Done when:** a manager can assign, reassign, approve, reject, and return-to-stage entirely from the board, and it updates without a page refresh when the underlying data changes.
 
 ## Step 7 — Employee dashboard
-Build `/my-work` per `05-employee-dashboard.md`. Fetch only the logged-in user's assigned work items. Wire Start/Stop/Update/Submit/Resume to the Step 5 RPCs. Render the Update form's fields dynamically from `workflow_steps.field_schema` for that item's stage. Include the urgent toggle.
+Build `/my-work` per `05-employee-dashboard.md`. Fetch only the logged-in user's assigned work items. Wire Start/Stop/Update/Submit/Resume to the Step 5 RPCs. Render the Update form's fields dynamically from the current `work_type_stages` and `work_type_fields` definitions for that item's stage. Include the urgent toggle.
 **Done when:** an employee can go from Assigned → Start → Update → Submit, and see a manager's rejection reason with a working Resume action — all on a single-column mobile layout.
 
 ## Step 8 — Job detail
@@ -57,4 +57,4 @@ Seed demo data resembling the FTTB examples (mixed workflows — some jobs short
 
 ## Step 12 — Credits & instrumentation
 Implement `10-monetization-credits.md`'s schema and the 25%/10%/0% warning states, and wire the `product_events` firing points from `12-experiment-tracking.md` at every listed moment (signup, first workflow, first job, invites, credit thresholds, referrals). Founder/product-intelligence dashboard can be a simple internal-only page reading from these tables — no polish needed yet.
-**Done when:** a full trial run (signup → onboarding → invite → job → exhaust free credits → see the 0% state) never blocks access to existing data, and every `product_events` row in the table above fires at the right moment.
+**Done when:** a full trial run (signup → onboarding → invite → job → exhaust free credits → see the 0% state) keeps existing jobs, history, documents, and in-progress work fully usable, while blocking only new job creation and new employee activation; every `product_events` row in the table above fires at the right moment.
